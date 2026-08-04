@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 360 140" fill="none" role="img" aria-label="ДИИП — методология дизайна ИИ-преобразований">
+  <text x="0" y="82" style="font-family: Geist, system-ui, sans-serif; font-weight: 700; font-size: 88px; letter-spacing: -0.05em; fill: currentColor">ДИИП</text>
+  <line x1="0" y1="100" x2="320" y2="100" stroke="currentColor" stroke-width="2"/>
+  <line x1="0" y1="110" x2="280" y2="110" stroke="currentColor" stroke-width="1" opacity="0.55"/>
+  <line x1="0" y1="118" x2="240" y2="118" stroke="currentColor" stroke-width="1" opacity="0.35"/>
+  <line x1="0" y1="126" x2="200" y2="126" stroke="currentColor" stroke-width="1" opacity="0.2"/>
+</svg>

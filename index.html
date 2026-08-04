@@ -1,0 +1,937 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Малые проектные команды — методология работы МПК</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Unbounded:wght@300;500;700;900&family=Golos+Text:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0e0e11;
+    --bg-soft: #17171c;
+    --card: #1b1b21;
+    --ink: #edede6;
+    --muted: #93939c;
+    --dim: #5c5c66;
+    --lime: #cff54a;
+    --lime-dim: rgba(207, 245, 74, .14);
+    --line: rgba(237, 237, 230, .12);
+    --danger: #ff6a5e;
+    --display: "Unbounded", sans-serif;
+    --body: "Golos Text", sans-serif;
+    --mono: "IBM Plex Mono", monospace;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html { font-size: clamp(11px, calc(0.55vw + 0.85vh), 19px); }
+  body {
+    background: var(--bg);
+    color: var(--ink);
+    font-family: var(--body);
+    overflow: hidden;
+    height: 100vh;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* ---- atmosphere ---- */
+  .grain {
+    position: fixed; inset: -50%;
+    width: 200%; height: 200%;
+    pointer-events: none; z-index: 50;
+    opacity: .05;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2'/%3E%3C/filter%3E%3Crect width='200' height='200' filter='url(%23n)'/%3E%3C/svg%3E");
+    animation: grain 8s steps(10) infinite;
+  }
+  @keyframes grain {
+    0%,100% { transform: translate(0,0); } 20% { transform: translate(-2%,2%); }
+    40% { transform: translate(2%,-1%); } 60% { transform: translate(-1%,-2%); }
+    80% { transform: translate(1%,2%); }
+  }
+  .glow {
+    position: fixed; z-index: 0; pointer-events: none;
+    width: 60vw; height: 60vw; border-radius: 50%;
+    background: radial-gradient(circle, rgba(207,245,74,.07) 0%, transparent 60%);
+    top: -25vw; right: -20vw;
+  }
+
+  /* ---- deck ---- */
+  .deck { position: fixed; inset: 0; z-index: 1; }
+  .slide {
+    position: absolute; inset: 0;
+    padding: 4.5rem 5rem 5.5rem;
+    display: flex; flex-direction: column; justify-content: center;
+    opacity: 0; visibility: hidden;
+    transform: translateY(1.5rem);
+    transition: opacity .45s ease, transform .45s ease, visibility 0s .45s;
+  }
+  .slide.active {
+    opacity: 1; visibility: visible; transform: none;
+    transition: opacity .5s ease .1s, transform .5s ease .1s;
+  }
+
+  /* ghost number */
+  .slide::before {
+    content: attr(data-num);
+    position: absolute; top: 2.4rem; right: 4.5rem;
+    font-family: var(--display); font-weight: 900;
+    font-size: 7rem; line-height: 1;
+    color: transparent;
+    -webkit-text-stroke: 1px rgba(237,237,230,.1);
+    pointer-events: none;
+  }
+
+  /* reveal animation */
+  .rv { opacity: 0; }
+  .slide.active .rv { animation: rise .6s cubic-bezier(.2,.7,.2,1) forwards; animation-delay: var(--d, 0s); }
+  @keyframes rise { from { opacity: 0; transform: translateY(1.2rem); } to { opacity: 1; transform: none; } }
+
+  /* ---- typography primitives ---- */
+  .kicker {
+    font-family: var(--mono); font-size: .72rem; letter-spacing: .22em;
+    text-transform: uppercase; color: var(--lime);
+    display: flex; align-items: center; gap: .8rem; margin-bottom: 1.4rem;
+  }
+  .kicker::before { content: ""; width: 2.2rem; height: 1px; background: var(--lime); }
+  h1 { font-family: var(--display); font-weight: 900; font-size: 3.6rem; line-height: 1.06; letter-spacing: -.01em; }
+  h2 { font-family: var(--display); font-weight: 700; font-size: 2.3rem; line-height: 1.12; margin-bottom: 1.8rem; max-width: 42rem; }
+  h2 em { font-style: normal; color: var(--lime); }
+  .lead { font-size: 1.15rem; line-height: 1.55; color: var(--muted); max-width: 38rem; }
+  .lead strong, .card p strong { color: var(--ink); font-weight: 600; }
+
+  /* ---- shared components ---- */
+  .card {
+    background: var(--card); border: 1px solid var(--line);
+    border-radius: .6rem; padding: 1.3rem 1.4rem;
+  }
+  .card h3 { font-family: var(--display); font-weight: 500; font-size: 1rem; margin-bottom: .6rem; }
+  .card p, .card li { font-size: .92rem; line-height: 1.5; color: var(--muted); }
+  .tag {
+    font-family: var(--mono); font-size: .68rem; letter-spacing: .14em; text-transform: uppercase;
+    color: var(--lime); background: var(--lime-dim); border-radius: 2rem;
+    padding: .25rem .7rem; display: inline-block; margin-bottom: .8rem;
+  }
+  ul.clean { list-style: none; }
+  ul.clean li { position: relative; padding-left: 1.3rem; margin-bottom: .45rem; }
+  ul.clean li::before { content: "→"; position: absolute; left: 0; color: var(--lime); font-family: var(--mono); }
+
+  /* ===================== SLIDE-SPECIFIC ===================== */
+
+  /* title */
+  .s-title h1 { font-size: 4.4rem; max-width: 60rem; }
+  .s-title h1 .accent { color: var(--lime); display: block; }
+  .s-title .lead { margin-top: 1.8rem; max-width: 44rem; }
+  .s-title .meta {
+    margin-top: 3rem; display: flex; gap: 2.5rem; align-items: baseline;
+    font-family: var(--mono); font-size: .8rem; color: var(--dim);
+  }
+  .s-title .meta b { color: var(--ink); font-weight: 500; }
+  .hint { position: absolute; bottom: 5.5rem; right: 5rem; font-family: var(--mono); font-size: .72rem; color: var(--dim); }
+  .hint kbd { border: 1px solid var(--line); border-radius: .3rem; padding: .15rem .45rem; margin: 0 .15rem; }
+
+  /* document passport */
+  .s-doc { justify-content: center; padding-top: 5rem; padding-bottom: 5rem; }
+  .s-doc::before { display: none; }
+  .s-doc h1 { font-size: 2.65rem; line-height: 1.12; max-width: none; margin-top: .75rem; }
+  .s-doc-logo {
+    position: absolute; top: 2.2rem; right: 4.5rem;
+    width: 11rem; height: auto; opacity: .92;
+    filter: invert(1); pointer-events: none;
+  }
+  .doc-top {
+    display: grid; grid-template-columns: 1fr 1.35fr 1.65fr; gap: 1.6rem;
+    width: 100%; max-width: none; margin-top: 1.6rem;
+  }
+  .doc-bottom {
+    display: grid; grid-template-columns: 1.35fr 1fr; gap: 1.6rem;
+    width: 100%; max-width: none; margin-top: 1.4rem;
+  }
+  .doc-panel {
+    border-top: 1px solid var(--line); padding: 1rem 0 0;
+  }
+  .doc-panel.accent { border-top-color: var(--line); }
+  .doc-panel h3 {
+    font-family: var(--mono); font-size: .84rem; letter-spacing: .12em;
+    text-transform: uppercase; color: var(--lime); margin-bottom: .9rem; font-weight: 500;
+  }
+  .doc-panel p, .doc-panel li { font-size: 1.02rem; line-height: 1.46; color: var(--muted); }
+  .doc-panel p strong, .doc-panel li strong { color: var(--ink); font-weight: 600; }
+  .doc-meta { display: grid; gap: .75rem; }
+  .doc-meta-row { display: grid; grid-template-columns: 7.8rem 1fr; gap: .9rem; align-items: baseline; }
+  .doc-meta-row span:first-child { font-family: var(--mono); font-size: .72rem; color: var(--dim); text-transform: uppercase; letter-spacing: .07em; }
+  .doc-meta-row span:last-child { font-size: 1rem; line-height: 1.4; color: var(--ink); }
+  .doc-list { list-style: none; display: grid; gap: .58rem; }
+  .doc-list li { position: relative; padding-left: 1.2rem; }
+  .doc-list li::before { content: "—"; position: absolute; left: 0; color: var(--lime); }
+  .doc-steps { list-style: none; counter-reset: doc-step; display: grid; gap: .62rem; }
+  .doc-steps li { counter-increment: doc-step; position: relative; padding-left: 2.3rem; }
+  .doc-steps li::before {
+    content: counter(doc-step, decimal-leading-zero); position: absolute; left: 0; top: .05rem;
+    font-family: var(--mono); font-size: .78rem; color: var(--lime);
+  }
+  .profile-link {
+    color: var(--ink); text-decoration: none;
+    border-bottom: 1px solid rgba(207,245,74,.45);
+    transition: color .2s, border-color .2s;
+  }
+  .profile-link:hover { color: var(--lime); border-color: var(--lime); }
+
+  /* chain */
+  .chain { display: flex; flex-wrap: wrap; gap: .7rem; max-width: 62rem; margin-bottom: 1.6rem; }
+  .chain .step {
+    display: flex; align-items: center; gap: .8rem;
+    background: var(--card); border: 1px solid var(--line); border-radius: .5rem;
+    padding: .85rem 1.1rem; font-size: .92rem; color: var(--muted);
+  }
+  .chain .step b { font-family: var(--mono); color: var(--dim); font-weight: 400; font-size: .75rem; }
+  .chain .arr { align-self: center; color: var(--dim); font-family: var(--mono); }
+  .loopback {
+    display: inline-flex; align-items: center; gap: .8rem;
+    border: 1px dashed var(--danger); border-radius: .5rem;
+    color: var(--danger); padding: .85rem 1.2rem; font-size: .95rem;
+  }
+
+  /* problems grid */
+  .grid { display: grid; gap: .9rem; }
+  .g2 { grid-template-columns: repeat(2, 1fr); }
+  .g3 { grid-template-columns: repeat(3, 1fr); }
+  .g4 { grid-template-columns: repeat(4, 1fr); }
+  .prob { border-left: 2px solid var(--danger); }
+  .prob .num { font-family: var(--mono); font-size: .7rem; color: var(--danger); display: block; margin-bottom: .45rem; }
+  .prob p { color: var(--ink); font-size: .95rem; }
+
+  /* quote slide */
+  .s-quote { align-items: flex-start; }
+  .bigquote {
+    font-family: var(--display); font-weight: 500;
+    font-size: 2.15rem; line-height: 1.3; max-width: 58rem;
+  }
+  .bigquote em { font-style: normal; color: var(--lime); }
+  .quote-mark { font-family: var(--display); font-weight: 900; font-size: 5rem; color: var(--lime); line-height: .5; margin-bottom: 2rem; display: block; }
+
+  /* format cards */
+  .fmt { display: grid; grid-template-columns: 1fr 1fr; gap: 1.2rem; max-width: 66rem; }
+  .fmt .card { padding: 1.6rem 1.7rem; }
+  .fmt .who { font-family: var(--display); font-size: 1.15rem; font-weight: 500; line-height: 1.4; margin-bottom: 1rem; }
+  .fmt .who span { color: var(--lime); }
+  .fmt .ex { margin-top: 1.1rem; padding-top: 1rem; border-top: 1px solid var(--line); }
+  .fmt .ex b { font-family: var(--mono); font-size: .68rem; letter-spacing: .14em; text-transform: uppercase; color: var(--dim); display: block; margin-bottom: .5rem; font-weight: 400; }
+  .fmt.formats { grid-template-columns: repeat(3, 1fr); max-width: 68rem; }
+  .fmt.formats .card { padding: 1.35rem 1.4rem; }
+  .fmt.formats .who { font-size: 1rem; }
+  .fmt.meetings { grid-template-columns: repeat(3, 1fr); max-width: 68rem; }
+  .fmt.meetings .card { padding: 1.35rem 1.4rem; }
+  .fmt.meetings .who { font-size: 1rem; }
+
+  /* product contour */
+  .kanban { display: grid; grid-template-columns: repeat(4, 1fr); gap: .7rem; max-width: 68rem; }
+  .kanban-col {
+    min-height: 12.5rem; padding: .85rem;
+    background: var(--bg-soft); border: 1px solid var(--line); border-radius: .55rem;
+  }
+  .kanban-head {
+    display: flex; justify-content: space-between; gap: .6rem; align-items: baseline;
+    margin-bottom: .75rem; font-family: var(--mono); font-size: .66rem;
+    letter-spacing: .12em; text-transform: uppercase; color: var(--dim);
+  }
+  .kanban-head b { color: var(--lime); font-weight: 500; }
+  .kanban-task {
+    margin-top: .55rem; padding: .72rem .75rem;
+    background: var(--card); border-left: 2px solid var(--lime); border-radius: .35rem;
+  }
+  .kanban-task b { display: block; margin-bottom: .28rem; font-size: .78rem; font-weight: 600; color: var(--ink); }
+  .kanban-task span { display: block; font-size: .7rem; line-height: 1.35; color: var(--muted); }
+  .kanban-task small { display: block; margin-top: .45rem; font-family: var(--mono); font-size: .58rem; color: var(--dim); }
+
+  /* role slides */
+  .role-cols { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1.1rem; max-width: 66rem; }
+  .role-note {
+    margin-top: 1.4rem; max-width: 66rem;
+    border: 1px solid rgba(207,245,74,.35); background: var(--lime-dim);
+    border-radius: .6rem; padding: 1rem 1.3rem; font-size: .95rem; line-height: 1.5;
+  }
+  .role-note b { color: var(--lime); }
+
+  /* responsibility table */
+  .rtable { max-width: 68rem; border: 1px solid var(--line); border-radius: .6rem; overflow: hidden; }
+  .rrow { display: grid; grid-template-columns: 1.15fr .7fr 1.6fr; border-top: 1px solid var(--line); }
+  .rrow:first-child { border-top: none; background: var(--bg-soft); }
+  .rrow > div { padding: .72rem 1.1rem; font-size: .88rem; line-height: 1.4; }
+  .rrow .zone { color: var(--ink); font-weight: 500; }
+  .rrow .own { font-family: var(--mono); font-size: .78rem; color: var(--lime); align-self: center; }
+  .rrow .how { color: var(--muted); }
+  .rrow.head > div { font-family: var(--mono); font-size: .68rem; letter-spacing: .15em; text-transform: uppercase; color: var(--dim); }
+
+  /* lifecycle */
+  .lifecycle { display: grid; grid-template-columns: 1fr 1fr; gap: 2rem; max-width: 68rem; }
+  .lifecycle-block { display: flex; flex-direction: column; gap: .75rem; }
+  .lifecycle-label {
+    font-family: var(--mono); font-size: .7rem; letter-spacing: .16em;
+    text-transform: uppercase; color: var(--lime);
+  }
+  .stages { display: flex; flex-direction: column; }
+  .stage { position: relative; display: grid; grid-template-columns: 2.4rem 1fr; align-items: baseline; padding: .85rem 0 .8rem; }
+  .stage::before { content: ""; position: absolute; top: 0; left: 0; right: 0; height: 2px; background: var(--line); }
+  .stage.hot::before { background: var(--lime); }
+  .stage .n { font-family: var(--display); font-weight: 700; font-size: 1.5rem; color: var(--dim); }
+  .stage.hot .n { color: var(--lime); }
+  .stage h4 { display: flex; justify-content: space-between; align-items: baseline; gap: .8rem; font-size: .95rem; font-weight: 600; }
+  .stage .role { white-space: nowrap; font-family: var(--mono); font-size: .63rem; line-height: 1.25; color: var(--lime); font-weight: 400; }
+  .stage p { grid-column: 2; margin-top: .3rem; padding-right: .8rem; font-size: .74rem; line-height: 1.4; color: var(--muted); }
+
+  /* principles */
+  .princ .card { border-top: 2px solid var(--lime); }
+  .princ .card h3 { font-size: .95rem; }
+
+  /* metrics */
+  .split { display: grid; grid-template-columns: 1fr 1fr; gap: 1.4rem; max-width: 66rem; }
+  .mlist { list-style: none; }
+  .mlist li {
+    display: flex; justify-content: space-between; gap: 1.5rem; align-items: baseline;
+    padding: .55rem 0; border-bottom: 1px solid var(--line); font-size: .88rem;
+  }
+  .mlist li span:first-child { color: var(--ink); }
+  .mlist li span:last-child { color: var(--dim); font-size: .78rem; text-align: right; }
+  .panel-title { font-family: var(--mono); font-size: .7rem; letter-spacing: .18em; text-transform: uppercase; color: var(--lime); margin-bottom: .9rem; }
+
+  /* effects */
+  .effect .card { display: flex; gap: 1rem; align-items: flex-start; }
+  .effect .card .ico { font-family: var(--mono); color: var(--lime); font-size: .8rem; padding-top: .2rem; }
+  .effect .card p { color: var(--ink); font-size: .93rem; }
+
+  /* next steps */
+  .next-steps { display: flex; flex-direction: column; gap: 1rem; max-width: 54rem; }
+  .nstep { display: flex; gap: 1.4rem; align-items: baseline; }
+  .nstep .n { font-family: var(--display); font-weight: 900; font-size: 1.6rem; color: var(--lime); min-width: 3rem; }
+  .nstep p { font-size: 1.05rem; line-height: 1.5; color: var(--muted); }
+  .nstep p strong { color: var(--ink); }
+
+  /* final */
+  .s-final { text-align: left; }
+  .s-final h1 { font-size: 4rem; }
+  .s-final h1 .accent { color: var(--lime); }
+  .s-final .lead { margin-top: 1.6rem; }
+
+  /* ---- navigation chrome ---- */
+  .navbar {
+    position: fixed; bottom: 0; left: 0; right: 0; z-index: 60;
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 1rem 5rem 1.4rem;
+  }
+  .counter { font-family: var(--mono); font-size: .75rem; color: var(--dim); letter-spacing: .1em; }
+  .counter b { color: var(--lime); font-weight: 500; }
+  .navbtns { display: flex; gap: .6rem; }
+  .navbtns button {
+    background: var(--card); border: 1px solid var(--line); color: var(--ink);
+    width: 2.6rem; height: 2.6rem; border-radius: 50%; cursor: pointer;
+    font-family: var(--mono); font-size: 1rem;
+    transition: border-color .2s, color .2s, transform .15s;
+  }
+  .navbtns button:hover { border-color: var(--lime); color: var(--lime); transform: translateY(-2px); }
+  .progress { position: fixed; top: 0; left: 0; height: 3px; background: var(--lime); z-index: 70; transition: width .4s cubic-bezier(.2,.7,.2,1); }
+  .brand {
+    position: fixed; top: 2.6rem; left: 5rem; z-index: 60;
+    font-family: var(--mono); font-size: .72rem; letter-spacing: .2em; color: var(--dim); text-transform: uppercase;
+  }
+  .brand b { color: var(--lime); font-weight: 500; }
+
+  @media (max-width: 760px) {
+    .slide { padding: 3.5rem 1.6rem 5rem; overflow-y: auto; justify-content: flex-start; }
+    .slide::before { right: 1.4rem; font-size: 4rem; }
+    .g2, .g3, .g4, .fmt, .fmt.formats, .kanban, .role-cols, .split, .lifecycle, .doc-top, .doc-bottom { grid-template-columns: 1fr; }
+    .rrow { grid-template-columns: 1fr; }
+    .rrow.head { display: none; }
+    .navbar, .brand { padding-left: 1.6rem; padding-right: 1.6rem; left: 0; }
+    h1, .s-title h1 { font-size: 2.6rem; }
+    .s-doc-logo { top: 1.4rem; right: 1.4rem; width: 7.5rem; }
+    .hint { display: none; }
+  }
+</style>
+</head>
+<body>
+<div class="glow"></div>
+<div class="grain"></div>
+<div class="progress" id="progress"></div>
+<div class="brand"><b>ДИИП</b>&nbsp;/ МПК</div>
+
+<div class="deck" id="deck">
+
+  <!-- 1. DOCUMENT PASSPORT -->
+  <section class="slide s-doc" data-num="01">
+    <img class="s-doc-logo rv" style="--d:.04s" src="./assets/diip-wordmark.svg" alt="ДИИП">
+    <div class="kicker rv">Методология МПК · паспорт документа</div>
+    <h1 class="rv" style="--d:.06s">Малые проектные команды (МПК)</h1>
+
+    <div class="doc-top">
+      <div class="doc-panel accent rv" style="--d:.10s">
+        <h3>О документе</h3>
+        <div class="doc-meta">
+          <div class="doc-meta-row"><span>Автор</span><span><strong><a class="profile-link" href="https://t.me/bitsak" target="_blank" rel="noopener">Дмитрий Бицак ↗</a></strong></span></div>
+          <div class="doc-meta-row"><span>Контрибьюторы</span><span>не указаны</span></div>
+          <div class="doc-meta-row"><span>Версия</span><span>1.0</span></div>
+          <div class="doc-meta-row"><span>Обновлено</span><span>4 августа 2026</span></div>
+        </div>
+      </div>
+
+      <div class="doc-panel rv" style="--d:.14s">
+        <h3>Зачем этот документ?</h3>
+        <p>Описывает новый подход к организации усиленных ИИ-агентами внутренних проектных команд на стыке ИТ и бизнеса.</p>
+      </div>
+
+      <div class="doc-panel rv" style="--d:.18s">
+        <h3>Содержание</h3>
+        <ul class="doc-list">
+          <li>зачем менять формат работы и что такое МПК</li>
+          <li>форматы команд, роли и зоны ответственности</li>
+          <li>жизненный цикл проекта и регулярные встречи</li>
+          <li>принципы, метрики, эффект и план запуска</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="doc-bottom">
+      <div class="doc-panel rv" style="--d:.22s">
+        <h3>Рекомендации</h3>
+        <ul class="doc-list">
+          <li>начинайте с одной конкретной проблемы и команды из 2–3 человек</li>
+          <li>не запускайте проект без активного заказчика, цели и метрики результата</li>
+          <li>владелец портфеля проектов задаёт рамки и устраняет препятствия, но не занимается микроменеджментом</li>
+          <li>используйте ИИ на всех этапах, а экспертов подключайте для сложных и рискованных решений</li>
+        </ul>
+      </div>
+
+      <div class="doc-panel accent rv" style="--d:.26s">
+        <h3>Как работать с документом</h3>
+        <ol class="doc-steps">
+          <li>Изучите методологию, подумайте, насколько она применима в ваших командах.</li>
+          <li>Запланируйте первые шаги, опираясь на слайд «План запуска».</li>
+        </ol>
+      </div>
+    </div>
+  </section>
+
+  <!-- 2. HOW IT WORKS TODAY -->
+  <section class="slide" data-num="02">
+    <div class="kicker rv">Почему мы меняемся</div>
+    <h2 class="rv" style="--d:.06s">Как выглядит процесс ИТ-разработки в большинстве компаний</h2>
+    <div class="chain">
+      <div class="step rv" style="--d:.10s"><b>01</b> Заказчик формулирует потребность</div><span class="arr rv" style="--d:.10s">→</span>
+      <div class="step rv" style="--d:.14s"><b>02</b> Руководитель или продакт-менеджер уточняет задачу</div><span class="arr rv" style="--d:.14s">→</span>
+      <div class="step rv" style="--d:.18s"><b>03</b> Аналитик описывает требования</div><span class="arr rv" style="--d:.18s">→</span>
+      <div class="step rv" style="--d:.22s"><b>04</b> Разработчик реализует</div><span class="arr rv" style="--d:.22s">→</span>
+      <div class="step rv" style="--d:.26s"><b>05</b> Результат возвращается на проверку</div><span class="arr rv" style="--d:.26s">→</span>
+      <div class="step rv" style="--d:.30s"><b>06</b> Доработка, тестирование, запуск</div>
+    </div>
+    <div class="loopback rv" style="--d:.38s">↺&nbsp; …и каждая доработка заново проходит значительную часть этого круга</div>
+    <p class="lead rv" style="margin-top:1.6rem; --d:.46s">Эта схема хорошо работала, пока компетенции были распределены между разными специалистами, а код и документы писались вручную. Этот мир закончился.</p>
+  </section>
+
+  <!-- 3. PROBLEMS -->
+  <section class="slide" data-num="03">
+    <div class="kicker rv">Почему мы меняемся</div>
+    <h2 class="rv" style="--d:.06s">Проблемы существующего процесса</h2>
+    <div class="grid g3" style="max-width:66rem">
+      <div class="card prob rv" style="--d:.10s"><span class="num">01</span><p>Задача долго ходит между ролями</p></div>
+      <div class="card prob rv" style="--d:.14s"><span class="num">02</span><p>Много времени уходит на передачу контекста</p></div>
+      <div class="card prob rv" style="--d:.18s"><span class="num">03</span><p>Ответственность размывается между участниками</p></div>
+      <div class="card prob rv" style="--d:.22s"><span class="num">04</span><p>Руководители и продакт-менеджеры — «бутылочное горлышко»</p></div>
+      <div class="card prob rv" style="--d:.26s"><span class="num">05</span><p>Разработчики слабо погружены в бизнес-контекст</p></div>
+      <div class="card prob rv" style="--d:.30s"><span class="num">06</span><p>Бизнес видит ИТ как внешний сервис, а не партнёра</p></div>
+    </div>
+    <p class="lead rv" style="margin-top:1.6rem; --d:.38s">Результат: <strong>долгий срок вывода решений на рынок (time-to-market)</strong> — то, что можно сделать за день, растягивается на несколько недель.</p>
+  </section>
+
+  <!-- 4. WHAT AI CHANGED -->
+  <section class="slide" data-num="04">
+    <div class="kicker rv">Что изменилось</div>
+    <h2 class="rv" style="--d:.06s">ИИ расширил <em>возможности одного человека</em></h2>
+    <p class="lead rv" style="--d:.12s; margin-bottom:1.8rem">Старый процесс проектировался под мир без ИИ. Сегодня один человек с ИИ-агентами выполняет существенно больше задач, чем раньше:</p>
+    <div class="grid g3" style="max-width:66rem">
+      <div class="card rv" style="--d:.18s"><h3>Собирает контекст</h3><p>Быстро разбирается в предметной области, процессах и кодовой базе</p></div>
+      <div class="card rv" style="--d:.22s"><h3>Проектирует решения</h3><p>Генерирует и сравнивает варианты архитектуры и подходов</p></div>
+      <div class="card rv" style="--d:.26s"><h3>Пишет и проверяет код</h3><p>Реализует решения, тестирует гипотезы и находит ошибки значительно быстрее</p></div>
+      <div class="card rv" style="--d:.30s"><h3>Готовит документацию</h3><p>ТЗ, инструкции и описания перестали быть «дорогими»</p></div>
+      <div class="card rv" style="--d:.34s"><h3>Тестирует сценарии</h3><p>Проверяет основные и пограничные случаи без отдельной очереди</p></div>
+      <div class="card rv" style="--d:.38s"><h3>Ускоряет коммуникацию</h3><p>Помогает бизнесу и ИТ быстрее понимать друг друга</p></div>
+    </div>
+  </section>
+
+  <!-- 5. MAIN PRINCIPLE -->
+  <section class="slide s-quote" data-num="05">
+    <div class="kicker rv">Главный принцип</div>
+    <span class="quote-mark rv" style="--d:.08s">“</span>
+    <p class="bigquote rv" style="--d:.14s">Не передавать задачу по цепочке, а поручить её <em>одному-двум людям</em>, которые при помощи ИИ-агентов пройдут путь от идеи до работающего решения.</p>
+    <p class="lead rv" style="margin-top:2.2rem; --d:.28s">Задача компании — организовать процесс, обеспечить инфраструктуру и поддержку, чтобы люди могли работать автономно и по-настоящему раскрывать потенциал ИИ.</p>
+  </section>
+
+  <!-- 6. WHAT IS MPK -->
+  <section class="slide" data-num="06">
+    <div class="kicker rv">Новый формат</div>
+    <h2 class="rv" style="--d:.06s">Что такое <em>МПК</em></h2>
+    <p class="lead rv" style="--d:.12s; margin-bottom:1.8rem"><strong>Малая проектная команда</strong> — временная команда под конкретную задачу на стыке ИТ и бизнес-процессов. Она отвечает за весь цикл изменений: от идеи до достижения целей проекта.</p>
+    <div class="grid g3" style="max-width:66rem">
+      <div class="card rv" style="--d:.18s">
+        <span class="tag">Ядро</span>
+        <h3>Команда из 2–3 человек</h3>
+        <p>Заказчик + ИИ-инженер, при необходимости — бизнес-аналитик. Прямая коммуникация без посредников.</p>
+      </div>
+      <div class="card rv" style="--d:.24s">
+        <span class="tag">Запуск и рамки</span>
+        <h3>Владелец портфеля (ВПП)</h3>
+        <p>Выбирает проект, формирует команду, задаёт рамки и следит за его актуальностью для бизнеса. В ежедневной работе не участвует.</p>
+      </div>
+      <div class="card rv" style="--d:.30s">
+        <span class="tag">По запросу</span>
+        <h3>Эксперты-консультанты</h3>
+        <p>Эксперты по безопасности, DevOps, QA и архитектуре подключаются для консультаций и проверки, когда это необходимо.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- 7. THREE FORMATS -->
+  <section class="slide" data-num="07">
+    <div class="kicker rv">Новый формат</div>
+    <h2 class="rv" style="--d:.06s">Три формата команды</h2>
+    <div class="fmt formats">
+      <div class="card rv" style="--d:.14s">
+        <span class="tag">МПК-2</span>
+        <p class="who">Заказчик <span>+</span> ИИ-инженер</p>
+        <p>Небольшие и средние задачи, где бизнес-контекст можно передать напрямую ИИ-инженеру, а объём аналитики ограничен.</p>
+        <div class="ex"><b>Примеры</b><p>ИИ-поиск по базе знаний · автоматизация обработки заявок · генерация регулярной отчётности</p></div>
+      </div>
+      <div class="card rv" style="--d:.22s">
+        <span class="tag">МПК-3</span>
+        <p class="who">Заказчик <span>+</span> бизнес-аналитик <span>+</span> ИИ-инженер</p>
+        <p>Когда есть сложная бизнес-логика, несколько заказчиков, много исключений, спорные требования или высокая цена ошибки.</p>
+        <div class="ex"><b>Примеры</b><p>ИИ-помощник закупок · контроль качества клиентских диалогов · прогнозирование спроса</p></div>
+      </div>
+      <div class="card rv" style="--d:.26s">
+        <span class="tag">Кросс-платформенная команда</span>
+        <p class="who">Заказчик <span>+</span> два и более ИИ-инженера</p>
+        <p>Для решений на стыке систем: требуются изменения или данные из нескольких платформ, а интеграция предполагает совместную разработку.</p>
+        <div class="ex"><b>Пример</b><p>ERP + CRM: изменения в обеих системах, обмен данными и единый сквозной сценарий.</p></div>
+      </div>
+    </div>
+    <p class="lead rv" style="margin-top:1.4rem; --d:.34s">Формат выбирает ВПП при запуске проекта — по бизнес-логике, числу затронутых систем и сложности интеграций.</p>
+  </section>
+
+  <!-- 8. CUSTOMER ROLE -->
+  <section class="slide" data-num="08">
+    <div class="kicker rv">Роли · 1 из 4</div>
+    <h2 class="rv" style="--d:.06s">Заказчик — <em>участник</em>, а не постановщик</h2>
+    <div class="role-cols">
+      <div class="card rv" style="--d:.12s">
+        <h3>Объясняет</h3>
+        <ul class="clean">
+          <li>бизнес-проблему и текущий процесс</li>
+          <li>ожидаемый результат</li>
+          <li>кто и как будет пользоваться решением</li>
+        </ul>
+      </div>
+      <div class="card rv" style="--d:.18s">
+        <h3>Участвует</h3>
+        <ul class="clean">
+          <li>быстро отвечает на вопросы команды</li>
+          <li>даёт обратную связь по демо и версиям</li>
+          <li>помогает разобраться в правилах и исключениях</li>
+        </ul>
+      </div>
+      <div class="card rv" style="--d:.24s">
+        <h3>Отвечает</h3>
+        <ul class="clean">
+          <li>принимает результат от лица бизнеса</li>
+          <li>внедряет решение</li>
+          <li>отвечает за бизнес-результат</li>
+        </ul>
+      </div>
+    </div>
+    <div class="role-note rv" style="--d:.32s"><b>Жёсткое правило:</b> если заказчик не готов быть активным участником проекта — проект не запускается или останавливается.</div>
+  </section>
+
+  <!-- 9. PRODUCT DEVELOPER -->
+  <section class="slide" data-num="09">
+    <div class="kicker rv">Роли · 2 из 4</div>
+    <h2 class="rv" style="--d:.06s">ИИ-инженер — <em>ключевая роль</em></h2>
+    <div class="role-cols">
+      <div class="card rv" style="--d:.12s">
+        <h3>Понимает задачу</h3>
+        <ul class="clean">
+          <li>разбирается в бизнес-контексте</li>
+          <li>напрямую общается с заказчиком</li>
+          <li>предлагает варианты решения</li>
+        </ul>
+      </div>
+      <div class="card rv" style="--d:.18s">
+        <h3>Строит решение</h3>
+        <ul class="clean">
+          <li>архитектура, данные, интеграции</li>
+          <li>бэкенд, UI/UX и пользовательские сценарии</li>
+          <li>ИИ-компоненты, модели, промпты</li>
+          <li>доступы, роли, безопасность</li>
+        </ul>
+      </div>
+      <div class="card rv" style="--d:.24s">
+        <h3>Доводит до результата</h3>
+        <ul class="clean">
+          <li>тестирует, включая пограничные случаи</li>
+          <li>развёртывает и стабилизирует решение в рабочей среде</li>
+          <li>готовит документацию, настраивает мониторинг и передаёт решение</li>
+        </ul>
+      </div>
+    </div>
+    <div class="role-note rv" style="--d:.32s">Это <b>не</b> «человек-оркестр вместо всех»: в сложных, критичных и рискованных задачах ИИ-инженер <b>обязан привлекать</b> специалистов по архитектуре, QA, DevOps и безопасности для консультаций и проверки.</div>
+  </section>
+
+  <!-- 10. ANALYST + VPP -->
+  <section class="slide" data-num="10">
+    <div class="kicker rv">Роли · 3 и 4 из 4</div>
+    <h2 class="rv" style="--d:.06s">Бизнес-аналитик и ВПП</h2>
+    <div class="fmt">
+      <div class="card rv" style="--d:.12s">
+        <span class="tag">Бизнес-аналитик</span>
+        <ul class="clean">
+          <li>помогает заказчику подготовить ТЗ и собрать данные</li>
+          <li>прорабатывает сценарии, правила, ограничения и исключения</li>
+          <li>выявляет спорные места и помогает договориться о требованиях</li>
+          <li>проверяет соответствие решения бизнес-логике при приёмке</li>
+        </ul>
+        <div class="ex"><b>Важно</b><p>Аналитик усиливает понимание, а не становится барьером между заказчиком и ИИ-инженером.</p></div>
+      </div>
+      <div class="card rv" style="--d:.20s">
+        <span class="tag">Владелец портфеля проектов</span>
+        <ul class="clean">
+          <li>выбирает и приоритизирует задачи для формата МПК</li>
+          <li>формирует команду и задаёт цель, границы и ограничения</li>
+          <li>устраняет препятствия, связанные с бюджетами, доступами и согласованиями, и обеспечивает административную поддержку</li>
+          <li>подключается, если команда застряла или теряет фокус</li>
+        </ul>
+        <div class="ex"><b>Важно</b><p>ВПП — не менеджер проекта. Он наблюдает и консультирует, но не управляет каждым шагом и не отвечает за результат вместо команды.</p></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 11. RESPONSIBILITY -->
+  <section class="slide" data-num="11">
+    <div class="kicker rv">Правила игры</div>
+    <h2 class="rv" style="--d:.06s">Модель ответственности</h2>
+    <div class="rtable rv" style="--d:.12s">
+      <div class="rrow head"><div>Зона</div><div>Кто отвечает</div><div>Как участвует</div></div>
+      <div class="rrow"><div class="zone">Актуальность проекта</div><div class="own">ВПП</div><div class="how">Определяет приоритет и запускает проект</div></div>
+      <div class="rrow"><div class="zone">Качество продукта</div><div class="own">Заказчик</div><div class="how">Определяет, какую проблему решает проект, и принимает результат</div></div>
+      <div class="rrow"><div class="zone">Скорость процесса</div><div class="own">МПК + ВПП</div><div class="how">Команда продвигает проект, ВПП устраняет препятствия и следит за соблюдением рамок</div></div>
+      <div class="rrow"><div class="zone">Качество кода</div><div class="own">ИИ-инженер</div><div class="how">Пишет по стандартам, тестирует, инициирует проверку при необходимости</div></div>
+      <div class="rrow"><div class="zone">Техническое решение</div><div class="own">ИИ-инженер</div><div class="how">Проектирует архитектуру и интеграции, оценивает риски сопровождения, привлекает экспертов</div></div>
+      <div class="rrow"><div class="zone">Бизнес-результат</div><div class="own">Заказчик</div><div class="how">Проверяет, что решение действительно решает бизнес-задачу</div></div>
+      <div class="rrow"><div class="zone">Актуальность ТЗ</div><div class="own">МПК</div><div class="how">Обновляет документ по мере изменения требований и решений</div></div>
+    </div>
+    <p class="lead rv" style="margin-top:1.4rem; --d:.24s">Успех проекта — успех всей команды. За неудачу также <strong>отвечает вся команда</strong>, а не отдельный участник.</p>
+  </section>
+
+  <!-- 12. PROJECT COMPLETION -->
+  <section class="slide" data-num="12">
+    <div class="kicker rv">Как измеряем</div>
+    <h2 class="rv" style="--d:.06s">Как завершать проект</h2>
+    <div class="split">
+      <div class="card rv" style="--d:.12s">
+        <div class="panel-title">Карточка результата проекта</div>
+        <ul class="mlist">
+          <li><span>Проблема и решение</span><span>какая была проблема, что сделали</span></li>
+          <li><span>Срок до первого результата</span><span>старт → первая рабочая версия</span></li>
+          <li><span>Срок до запуска</span><span>старт → внедрение</span></li>
+          <li><span>Эффект</span><span>экономия времени, сокращение ручного труда, снижение числа ошибок</span></li>
+          <li><span>Использование ИИ</span><span>какие инструменты и какой вклад</span></li>
+          <li><span>Уроки и масштабирование</span><span>что повторять, что не сработало</span></li>
+        </ul>
+      </div>
+      <div class="card rv" style="--d:.20s">
+        <div class="panel-title">Метрики подхода в целом</div>
+        <ul class="mlist">
+          <li><span>Запущенные и завершённые МПК</span><span>активность формата</span></li>
+          <li><span>Средний срок до первого результата</span><span>скорость команд</span></li>
+          <li><span>Средний срок до запуска</span><span>скорость внедрения</span></li>
+          <li><span>Доля проектов с измеримым эффектом</span><span>связь с пользой</span></li>
+          <li><span>Экономия человеко-часов</span><span>операционный эффект</span></li>
+          <li><span>Активные заказчики и ИИ-инженеры</span><span>вовлечённость и рост</span></li>
+        </ul>
+      </div>
+    </div>
+    <p class="lead rv" style="margin-top:1.4rem; --d:.28s">Раз в месяц ВПП проводят общую ретроспективу по всем МПК. Цель — не отчётность, а понимание того, где подход работает, а где его нужно корректировать.</p>
+  </section>
+
+  <!-- 13. LIFECYCLE -->
+  <section class="slide" data-num="13">
+    <div class="kicker rv">Как устроен проект</div>
+    <h2 class="rv" style="--d:.06s">Жизненный цикл: <em>8 этапов</em></h2>
+    <div class="lifecycle">
+      <div class="lifecycle-block">
+        <div class="lifecycle-label rv" style="--d:.10s">Запуск инициатив</div>
+        <div class="stages">
+          <div class="stage rv" style="--d:.14s"><span class="n">1</span><h4>Идея <span class="role">заказчик</span></h4><p>Заказчик формулирует проблему, ожидаемый эффект и исходную идею решения.</p></div>
+          <div class="stage rv" style="--d:.18s"><span class="n">2</span><h4>Отбор инициатив <span class="role">ВПП</span></h4><p>ВПП оценивает ценность, реализуемость и соответствие инициативы формату МПК.</p></div>
+          <div class="stage rv" style="--d:.22s"><span class="n">3</span><h4>Уточнение брифа <span class="role">ВПП</span></h4><p>ВПП вместе с заказчиком уточняет цель, метрики, ограничения и ключевые вводные.</p></div>
+          <div class="stage rv" style="--d:.26s"><span class="n">4</span><h4>Поиск команды <span class="role">ВПП</span></h4><p>ВПП подбирает участников, согласует роли и определяет дату старта.</p></div>
+        </div>
+      </div>
+      <div class="lifecycle-block">
+        <div class="lifecycle-label rv" style="--d:.30s">Реализация</div>
+        <div class="stages">
+          <div class="stage hot rv" style="--d:.34s"><span class="n">5</span><h4>Реализация MVP <span class="role">МПК</span></h4><p>Команда создаёт MVP, проверяет ключевые сценарии и собирает обратную связь заказчика.</p></div>
+          <div class="stage hot rv" style="--d:.38s"><span class="n">6</span><h4>Боевой запуск <span class="role">МПК</span></h4><p>Команда выводит решение в рабочую среду и стабилизирует его при реальной нагрузке.</p></div>
+          <div class="stage hot rv" style="--d:.42s"><span class="n">7</span><h4>Измерение эффекта <span class="role">заказчик</span></h4><p>Заказчик сравнивает результат с целевыми метриками и фиксирует фактический эффект.</p></div>
+          <div class="stage hot rv" style="--d:.46s"><span class="n">8</span><h4>Передача в поддержку <span class="role">ИИ-инженер</span></h4><p>ИИ-инженер передаёт решение в поддержку вместе с документацией, доступами и необходимыми знаниями.</p></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 14. REGULAR MEETINGS -->
+  <section class="slide" data-num="14">
+    <div class="kicker rv">Ритм проекта «Запуск МПК»</div>
+    <h2 class="rv" style="--d:.06s">Регулярные <em>встречи</em></h2>
+    <div class="fmt meetings">
+      <div class="card rv" style="--d:.14s">
+        <span class="tag">Раз в месяц</span>
+        <p class="who">Акселератор <span>бизнес-заказчиков</span></p>
+        <p>Пространство для обмена опытом и развития компетенций заказчиков: как ставить цели, работать с командой и доводить проекты до бизнес-результата.</p>
+        <div class="ex"><b>Участие обязательно</b><p>Заказчики · владельцы портфеля проектов (ВПП)</p></div>
+      </div>
+      <div class="card rv" style="--d:.18s">
+        <span class="tag">Раз в месяц</span>
+        <p class="who">Акселератор <span>ИИ-инженеров</span></p>
+        <p>Площадка для обмена опытом и развития ИИ-инженеров: как вести задачу вместе с заказчиком, применять ИИ и доводить решение до результата.</p>
+        <div class="ex"><b>Принцип</b><p>Организован по модели акселератора бизнес-заказчиков</p></div>
+      </div>
+      <div class="card rv" style="--d:.22s">
+        <span class="tag">Два раза в месяц</span>
+        <p class="who">Демо-день <span>МПК</span></p>
+        <p>Встреча, на которой малые проектные команды показывают результаты своей работы: первые прототипы, демо, запуски и карточки результатов.</p>
+        <div class="ex"><b>Участие обязательно</b><p>МПК в полном составе</p></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 15. PRODUCT CONTOUR -->
+  <section class="slide" data-num="15">
+    <div class="kicker rv">Система организации ИТ-команд</div>
+    <h2 class="rv" style="--d:.06s">Что делать с существующими командами разработки</h2>
+    <p class="lead rv" style="--d:.12s; margin-bottom:1.6rem">Существующие продуктовые команды организуем в формате <strong>«Продуктовый контур»</strong>: это постоянная группа разработчиков и специалистов вокруг системы или домена.</p>
+    <div class="grid g3" style="max-width:66rem">
+      <div class="card rv" style="--d:.18s"><span class="tag">Связь</span><h3>Вокруг продукта или домена</h3><p>Людей объединяет система или домен, даже если они работают над разными инициативами.</p></div>
+      <div class="card rv" style="--d:.22s"><span class="tag">Работа</span><h3>Автономные проекты</h3><p>ИИ-инженер ведёт свои задачи от проектирования решения до релиза, а коллеги помогают советом и контекстом.</p></div>
+      <div class="card rv" style="--d:.26s"><span class="tag">Ритм</span><h3>Общие практики</h3><p>Дейлики, общая канбан-доска и ревью помогают контролировать качество и обмениваться опытом.</p></div>
+    </div>
+  </section>
+
+  <!-- 16. SHARED KANBAN -->
+  <section class="slide" data-num="16">
+    <div class="kicker rv">Продуктовый контур · организация работы</div>
+    <h2 class="rv" style="--d:.06s">Канбан-доска продуктового контура</h2>
+    <p class="lead rv" style="--d:.10s; margin-bottom:1.2rem">Доску ведут сами ИИ-инженеры. На одном экране видны проекты, задачи внутри них, владельцы и текущее состояние работы.</p>
+    <div class="kanban">
+      <div class="kanban-col rv" style="--d:.14s">
+        <div class="kanban-head"><span>Очередь</span><b>2</b></div>
+        <div class="kanban-task"><b>ERP ↔ CRM</b><span>Согласовать контракт обмена данными</span><small>владелец · Анна</small></div>
+        <div class="kanban-task"><b>Портал</b><span>Описать сценарий выдачи прав</span><small>владелец · Игорь</small></div>
+      </div>
+      <div class="kanban-col rv" style="--d:.18s">
+        <div class="kanban-head"><span>В работе</span><b>2</b></div>
+        <div class="kanban-task"><b>ERP ↔ CRM</b><span>Добавить обработчик обновления клиента</span><small>владелец · Павел</small></div>
+        <div class="kanban-task"><b>Поиск</b><span>Настроить журналирование ошибок</span><small>владелец · Анна</small></div>
+      </div>
+      <div class="kanban-col rv" style="--d:.22s">
+        <div class="kanban-head"><span>Проверка</span><b>1</b></div>
+        <div class="kanban-task"><b>Отчётность</b><span>Проверить граничные сценарии выгрузки</span><small>владелец · Игорь</small></div>
+      </div>
+      <div class="kanban-col rv" style="--d:.26s">
+        <div class="kanban-head"><span>Готово</span><b>1</b></div>
+        <div class="kanban-task"><b>CRM</b><span>Добавить мониторинг фоновой задачи</span><small>владелец · Павел</small></div>
+      </div>
+    </div>
+    <div class="role-note rv" style="--d:.34s"><b>Карточки — часть документации:</b> по истории задач можно понять, что делали, зачем меняли решение и где искать связанные артефакты.</div>
+  </section>
+
+  <!-- 17. DAILY -->
+  <section class="slide" data-num="17">
+    <div class="kicker rv">Продуктовый контур · обязательная церемония</div>
+    <h2 class="rv" style="--d:.06s">Дейлик продуктового контура</h2>
+    <div class="role-cols">
+      <div class="card rv" style="--d:.12s">
+        <span class="tag">Статус</span>
+        <h3>Что происходит сейчас</h3>
+        <ul class="clean">
+          <li>что делаю и что завершил</li>
+          <li>каким будет следующий шаг</li>
+          <li>где возникло препятствие или появился риск</li>
+        </ul>
+      </div>
+      <div class="card rv" style="--d:.18s">
+        <span class="tag">Взаимопомощь</span>
+        <h3>Советы прямо по ходу</h3>
+        <ul class="clean">
+          <li>рекомендации по решению</li>
+          <li>предупреждения о зависимостях</li>
+          <li>быстрый поиск нужного эксперта</li>
+        </ul>
+      </div>
+      <div class="card rv" style="--d:.24s">
+        <span class="tag">Прозрачность</span>
+        <h3>Корректировка направления</h3>
+        <ul class="clean">
+          <li>видно, чем занят каждый ИИ-инженер</li>
+          <li>понятна загрузка контура</li>
+          <li>руководство может вовремя скорректировать приоритет</li>
+        </ul>
+      </div>
+    </div>
+    <div class="role-note rv" style="--d:.32s"><b>Предлагаемый регламент:</b> 15 минут каждый рабочий день. Подробные разборы продолжаются после дейлика только с теми, кто нужен для решения конкретного вопроса.</div>
+  </section>
+
+  <!-- 18. RETROSPECTIVE REVIEW -->
+  <section class="slide" data-num="18">
+    <div class="kicker rv">Продуктовый контур · обязательная церемония</div>
+    <h2 class="rv" style="--d:.06s">Ревью после релиза</h2>
+    <p class="lead rv" style="--d:.10s; margin-bottom:1.5rem">Только ИИ-инженеры. Они разбирают уже собранные и выпущенные проекты друг друга, изучая репозиторий, код и принятые технические решения.</p>
+    <div class="fmt">
+      <div class="card rv" style="--d:.16s">
+        <span class="tag">Как проходит</span>
+        <ul class="clean">
+          <li>автор проводит короткий обзор проекта и архитектуры</li>
+          <li>коллеги заходят в репозиторий и изучают ключевые места</li>
+          <li>задают вопросы о решениях, интеграциях и ограничениях</li>
+          <li>фиксируют задачи улучшения на общей доске</li>
+        </ul>
+      </div>
+      <div class="card rv" style="--d:.22s">
+        <span class="tag">Что получаем</span>
+        <ul class="clean">
+          <li>проекты проще передавать между ИИ-инженерами</li>
+          <li>чужие решения безопаснее развивать и изменять</li>
+          <li>потенциальные проблемы и технический долг становятся заметны раньше</li>
+          <li>удачные решения становятся общей практикой</li>
+        </ul>
+      </div>
+    </div>
+    <div class="role-note rv" style="--d:.30s"><b>Это не выпускной контроль:</b> встреча не блокирует релиз. На ревью исходят из того, что проект уже работает, и превращают полученный опыт в улучшения и знания.</div>
+  </section>
+
+  <!-- 19. PRINCIPLES -->
+  <section class="slide" data-num="19">
+    <div class="kicker rv">Как мы работаем</div>
+    <h2 class="rv" style="--d:.06s">Шесть принципов МПК</h2>
+    <div class="grid g3 princ" style="max-width:66rem">
+      <div class="card rv" style="--d:.10s"><h3>Прямая коммуникация</h3><p>Заказчик, аналитик и ИИ-инженер общаются напрямую. Чем меньше звеньев — тем быстрее движение.</p></div>
+      <div class="card rv" style="--d:.14s"><h3>Ответственность за результат</h3><p>Результат — не код, а работающее решение, которое устраняет бизнес-проблему и улучшает бизнес-метрики.</p></div>
+      <div class="card rv" style="--d:.18s"><h3>Быстрый первый результат</h3><p>Не уходим в долгий анализ. Показываем рабочую версию, получаем обратную связь, дорабатываем.</p></div>
+      <div class="card rv" style="--d:.22s"><h3>Живое ТЗ</h3><p>ТЗ — рабочая база проекта. Изменились требования или логика — изменился документ.</p></div>
+      <div class="card rv" style="--d:.26s"><h3>Контроль без микроменеджмента</h3><p>ВПП следит за рамками и бизнес-эффектом. Как решать задачу — команда определяет сама.</p></div>
+      <div class="card rv" style="--d:.30s"><h3>Максимум ИИ</h3><p>МПК используют ИИ активнее всех: требования, ТЗ, код, тесты, документация, анализ ошибок.</p></div>
+    </div>
+  </section>
+
+  <!-- 20. EXPECTED EFFECT -->
+  <section class="slide" data-num="20">
+    <div class="kicker rv">Зачем это всё</div>
+    <h2 class="rv" style="--d:.06s">Какой эффект получит компания</h2>
+    <div class="grid g2 effect" style="max-width:62rem">
+      <div class="card rv" style="--d:.10s"><span class="ico">01</span><p>Ускорение реализации небольших и средних проектов</p></div>
+      <div class="card rv" style="--d:.14s"><span class="ico">02</span><p>Руководители перестают быть «бутылочным горлышком»</p></div>
+      <div class="card rv" style="--d:.18s"><span class="ico">03</span><p>Рост самостоятельности ИИ-инженеров и аналитиков</p></div>
+      <div class="card rv" style="--d:.22s"><span class="ico">04</span><p>Параллельно реализуется больше инициатив</p></div>
+      <div class="card rv" style="--d:.26s"><span class="ico">05</span><p>Больше автоматизированных и оптимизированных процессов</p></div>
+      <div class="card rv" style="--d:.30s"><span class="ico">06</span><p>Культура продуктового мышления в ИТ</p></div>
+      <div class="card rv" style="--d:.34s"><span class="ico">07</span><p>ИИ-инструменты становятся частью ежедневной работы</p></div>
+      <div class="card rv" style="--d:.38s"><span class="ico">08</span><p>Библиотека успешных внутренних решений и практик</p></div>
+    </div>
+  </section>
+
+  <!-- 21. FIRST MPK LAUNCH -->
+  <section class="slide" data-num="21">
+    <div class="kicker rv">Переход к практике · пилот</div>
+    <h2 class="rv" style="--d:.06s">План запуска первой МПК</h2>
+    <div class="next-steps">
+      <div class="nstep rv" style="--d:.10s"><span class="n">01</span><p><strong>Выберите пилотную инициативу.</strong> Зафиксируйте бизнес-проблему, ожидаемый эффект, активного заказчика и реалистичный объём первой версии.</p></div>
+      <div class="nstep rv" style="--d:.16s"><span class="n">02</span><p><strong>Сформируйте МПК.</strong> Назначьте ВПП, заказчика и ИИ-инженера; подключите бизнес-аналитика, если бизнес-логика сложна, заказчиков несколько или цена ошибки высока.</p></div>
+      <div class="nstep rv" style="--d:.22s"><span class="n">03</span><p><strong>Проведите стартовую встречу.</strong> Согласуйте цель, метрики, ограничения, доступы, границы MVP, зоны ответственности и дату первого демо.</p></div>
+      <div class="nstep rv" style="--d:.28s"><span class="n">04</span><p><strong>Организуйте короткий рабочий цикл.</strong> Используйте прямую коммуникацию, живое ТЗ, канбан-доску, регулярные демо и ИИ на каждом этапе.</p></div>
+      <div class="nstep rv" style="--d:.34s"><span class="n">05</span><p><strong>Запустите и стабилизируйте решение.</strong> Проверьте ключевые сценарии, привлеките экспертов для проверки решений с повышенным риском, настройте мониторинг и передайте решение и знания команде поддержки.</p></div>
+      <div class="nstep rv" style="--d:.40s"><span class="n">06</span><p><strong>Завершите пилот.</strong> Измерьте эффект, заполните карточку результата, проведите ретроспективу и зафиксируйте изменения для следующей МПК.</p></div>
+    </div>
+  </section>
+
+  <!-- 22. COMPANY-WIDE SCALE -->
+  <section class="slide" data-num="22">
+    <div class="kicker rv">Следующий уровень · система</div>
+    <h2 class="rv" style="--d:.06s">Как масштабировать подход на всю компанию</h2>
+    <div class="next-steps">
+      <div class="nstep rv" style="--d:.10s"><span class="n">01</span><p><strong>Подведите итоги пилотов.</strong> Сравните эффект, сроки, препятствия и уроки первых МПК; определите, для каких задач формат работает лучше всего.</p></div>
+      <div class="nstep rv" style="--d:.16s"><span class="n">02</span><p><strong>Стандартизируйте инструменты.</strong> Утвердите бриф инициативы, живое ТЗ, карточку результата и правила распределения ответственности.</p></div>
+      <div class="nstep rv" style="--d:.22s"><span class="n">03</span><p><strong>Настройте управление портфелем.</strong> Назначьте ВПП, определите критерии отбора и приоритизации инициатив, введите общие метрики.</p></div>
+      <div class="nstep rv" style="--d:.28s"><span class="n">04</span><p><strong>Развивайте компетенции.</strong> Запустите акселераторы для заказчиков и ИИ-инженеров, демо-дни и сообщество внутренних экспертов.</p></div>
+      <div class="nstep rv" style="--d:.34s"><span class="n">05</span><p><strong>Сформируйте продуктовые контуры.</strong> Введите общие канбан-доски, дейлики, ревью после релиза и единые правила передачи решений в поддержку.</p></div>
+      <div class="nstep rv" style="--d:.40s"><span class="n">06</span><p><strong>Запускайте инициативы волнами.</strong> Ежемесячно оценивайте портфель, измеряйте эффект, устраняйте системные препятствия и обновляйте методологию.</p></div>
+    </div>
+  </section>
+
+  <!-- 23. FINAL -->
+  <section class="slide s-final" data-num="23">
+    <div class="kicker rv">Итог</div>
+    <h1 class="rv" style="--d:.08s">Меньше передач.<br><span class="accent">Больше результата.</span></h1>
+    <p class="lead rv" style="--d:.18s">МПК быстро доводят инициативы до результата. Продуктовые контуры сохраняют общий контекст, взаимопомощь и прозрачность между проектами.</p>
+    <div class="meta rv" style="--d:.28s; margin-top:2.5rem; font-family:var(--mono); font-size:.8rem; color:var(--dim)">
+      Вопросы? Обсудим прямо сейчас · <a class="profile-link" href="https://t.me/bitsak" target="_blank" rel="noopener">Дмитрий Бицак ↗</a>
+    </div>
+  </section>
+
+</div>
+
+<div class="navbar">
+  <div class="counter" id="counter"><b>01</b> / 23</div>
+  <div class="navbtns">
+    <button id="prev" aria-label="Назад">←</button>
+    <button id="next" aria-label="Вперёд">→</button>
+  </div>
+</div>
+
+<script>
+  const slides = Array.from(document.querySelectorAll('.slide'));
+  const counter = document.getElementById('counter');
+  const progress = document.getElementById('progress');
+  let cur = 0;
+
+  function pad(n) { return String(n).padStart(2, '0'); }
+
+  function go(n) {
+    n = Math.max(0, Math.min(slides.length - 1, n));
+    if (n === cur && slides[cur].classList.contains('active')) return;
+    slides.forEach((s, i) => s.classList.toggle('active', i === n));
+    cur = n;
+    counter.innerHTML = '<b>' + pad(n + 1) + '</b> / ' + pad(slides.length);
+    progress.style.width = ((n + 1) / slides.length * 100) + '%';
+    history.replaceState(null, '', '#' + (n + 1));
+  }
+
+  document.getElementById('next').addEventListener('click', () => go(cur + 1));
+  document.getElementById('prev').addEventListener('click', () => go(cur - 1));
+
+  document.addEventListener('keydown', (e) => {
+    if (['ArrowRight', ' ', 'PageDown'].includes(e.key)) { e.preventDefault(); go(cur + 1); }
+    else if (['ArrowLeft', 'PageUp'].includes(e.key)) { e.preventDefault(); go(cur - 1); }
+    else if (e.key === 'Home') go(0);
+    else if (e.key === 'End') go(slides.length - 1);
+  });
+
+  // swipe
+  let tx = null;
+  document.addEventListener('touchstart', e => tx = e.touches[0].clientX, { passive: true });
+  document.addEventListener('touchend', e => {
+    if (tx === null) return;
+    const dx = e.changedTouches[0].clientX - tx;
+    if (Math.abs(dx) > 50) go(cur + (dx < 0 ? 1 : -1));
+    tx = null;
+  }, { passive: true });
+
+  const start = parseInt(location.hash.slice(1), 10);
+  go(isNaN(start) ? 0 : start - 1);
+</script>
+</body>
+</html>
