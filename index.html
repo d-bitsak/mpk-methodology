@@ -279,6 +279,58 @@
   .stage .role { white-space: nowrap; font-family: var(--mono); font-size: .63rem; line-height: 1.25; color: var(--lime); font-weight: 400; }
   .stage p { grid-column: 2; margin-top: .3rem; padding-right: .8rem; font-size: .74rem; line-height: 1.4; color: var(--muted); }
 
+  /* initiative brief */
+  .brief-layout {
+    display: grid; grid-template-columns: 1fr 2fr; gap: 2.2rem;
+    align-items: stretch; max-width: 68rem;
+  }
+  .brief-intro { border-top: 2px solid var(--lime); padding-top: 1.1rem; }
+  .brief-number {
+    font-family: var(--display); font-weight: 900; font-size: 4.8rem;
+    line-height: .9; color: var(--lime); letter-spacing: -.04em;
+  }
+  .brief-number span {
+    display: block; margin-top: .75rem; font-family: var(--mono);
+    font-size: .72rem; line-height: 1; letter-spacing: .16em;
+    text-transform: uppercase; color: var(--dim);
+  }
+  .brief-benefits-title { margin-top: 1.25rem; font-size: .9rem; color: var(--ink); font-weight: 600; }
+  .brief-benefits { list-style: none; display: grid; gap: .7rem; margin-top: .7rem; }
+  .brief-benefits li {
+    position: relative; padding-left: 1rem; font-size: .86rem;
+    line-height: 1.45; color: var(--muted);
+  }
+  .brief-benefits li::before { content: "—"; position: absolute; left: 0; color: var(--lime); }
+  .brief-benefits strong { color: var(--ink); font-weight: 600; }
+  .brief-groups { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1.3rem; }
+  .brief-group { border-top: 1px solid var(--line); padding-top: 1.1rem; }
+  .brief-group h3 {
+    margin-bottom: .85rem; font-family: var(--mono); font-size: .72rem;
+    letter-spacing: .15em; text-transform: uppercase; color: var(--lime); font-weight: 500;
+  }
+  .brief-group ol { list-style: none; counter-reset: brief-item var(--brief-start, 0); display: grid; gap: .55rem; }
+  .brief-group li {
+    counter-increment: brief-item; position: relative; padding-left: 1.7rem;
+    font-size: .86rem; line-height: 1.4; color: var(--ink);
+  }
+  .brief-group li::before {
+    content: counter(brief-item, decimal-leading-zero); position: absolute; left: 0; top: .08rem;
+    font-family: var(--mono); font-size: .62rem; color: var(--dim);
+  }
+  .brief-actions { display: flex; align-items: center; gap: .9rem; margin-top: 1.8rem; max-width: 68rem; }
+  .download-btn {
+    display: inline-flex; align-items: center; justify-content: space-between; gap: 1.2rem;
+    min-width: 17.5rem; padding: .9rem 1.1rem; border: 1px solid rgba(207,245,74,.55);
+    border-radius: .45rem; color: var(--ink); text-decoration: none;
+    font-size: .88rem; font-weight: 600; transition: transform .2s, border-color .2s, background .2s, color .2s;
+  }
+  .download-btn span { font-family: var(--mono); font-size: .64rem; color: var(--lime); font-weight: 400; }
+  .download-btn.primary { background: var(--lime); border-color: var(--lime); color: var(--bg); }
+  .download-btn.primary span { color: var(--bg); }
+  .download-btn:hover { transform: translateY(-2px); border-color: var(--lime); background: var(--lime-dim); }
+  .download-btn.primary:hover { background: #dcff5c; color: var(--bg); }
+  .brief-note { max-width: 24rem; margin-left: .4rem; font-size: .78rem; line-height: 1.45; color: var(--muted); }
+
   /* principles */
   .princ .card { border-top: 2px solid var(--lime); }
   .princ .card h3 { font-size: .95rem; }
@@ -338,7 +390,9 @@
   @media (max-width: 760px) {
     .slide { padding: 3.5rem 1.6rem 5rem; overflow-y: auto; justify-content: flex-start; }
     .slide::before { right: 1.4rem; font-size: 4rem; }
-    .g2, .g3, .g4, .fmt, .fmt.formats, .kanban, .role-cols, .split, .lifecycle, .doc-top, .doc-bottom { grid-template-columns: 1fr; }
+    .g2, .g3, .g4, .fmt, .fmt.formats, .kanban, .role-cols, .split, .lifecycle, .doc-top, .doc-bottom, .brief-layout, .brief-groups { grid-template-columns: 1fr; }
+    .brief-actions { flex-wrap: wrap; }
+    .brief-note { margin-left: 0; }
     .rrow { grid-template-columns: 1fr; }
     .rrow.head { display: none; }
     .navbar, .brand { padding-left: 1.6rem; padding-right: 1.6rem; left: 0; }
@@ -684,8 +738,60 @@
     </div>
   </section>
 
-  <!-- 14. REGULAR MEETINGS -->
+  <!-- 14. INITIATIVE BRIEF -->
   <section class="slide" data-num="14">
+    <div class="kicker rv">Инструмент запуска · единый стандарт</div>
+    <h2 class="rv" style="--d:.06s">Шаблон брифа на ИТ-инициативу</h2>
+    <p class="lead rv" style="--d:.10s; margin-bottom:1.6rem">Бриф фиксирует общее понимание задачи до старта: <strong>зачем нужен проект, какой результат ожидается и в каких условиях его предстоит реализовать.</strong></p>
+    <div class="brief-layout">
+      <div class="brief-intro rv" style="--d:.14s">
+        <div class="brief-number">12<span>обязательных разделов</span></div>
+        <p class="brief-benefits-title">Документ помогает:</p>
+        <ul class="brief-benefits">
+          <li><strong>ВПП</strong> — оценить перспективность проекта</li>
+          <li><strong>Заказчику</strong> — сформулировать задачу для команды</li>
+          <li><strong>Исполнителям</strong> — погрузиться в контекст и понять, что именно нужно делать и куда надо прийти</li>
+        </ul>
+      </div>
+      <div class="brief-groups">
+        <div class="brief-group rv" style="--d:.18s">
+          <h3>Смысл</h3>
+          <ol>
+            <li>Название инициативы</li>
+            <li>Контекст</li>
+            <li>Идея</li>
+            <li>Проблемы бизнеса</li>
+          </ol>
+        </div>
+        <div class="brief-group rv" style="--d:.22s">
+          <h3>Результат</h3>
+          <ol style="--brief-start:4">
+            <li>Бизнес-цели</li>
+            <li>Job Story</li>
+            <li>Критерии успеха</li>
+            <li>Измеримые цели</li>
+          </ol>
+        </div>
+        <div class="brief-group rv" style="--d:.26s">
+          <h3>Реализация</h3>
+          <ol style="--brief-start:8">
+            <li>Ограничения</li>
+            <li>Источники</li>
+            <li>Сроки</li>
+            <li>Проектная группа</li>
+          </ol>
+        </div>
+      </div>
+    </div>
+    <div class="brief-actions rv" style="--d:.32s">
+      <a class="download-btn primary" href="./briefs/Бриф на ИИ-инициативу — ИИ-диспетчер заявок (синтетический пример).docx" download>Скачать пример брифа <span>DOCX ↓</span></a>
+      <a class="download-btn" href="./briefs/ai-initiative-brief.skill" download>Skill для заполнения брифа <span>SKILL ↓</span></a>
+      <p class="brief-note">Навык превращает интервью с заказчиком в заполненный бриф и собирает недостающие вводные в один список вопросов.</p>
+    </div>
+  </section>
+
+  <!-- 15. REGULAR MEETINGS -->
+  <section class="slide" data-num="15">
     <div class="kicker rv">Ритм проекта «Запуск МПК»</div>
     <h2 class="rv" style="--d:.06s">Регулярные <em>встречи</em></h2>
     <div class="fmt meetings">
@@ -710,8 +816,8 @@
     </div>
   </section>
 
-  <!-- 15. PRODUCT CONTOUR -->
-  <section class="slide" data-num="15">
+  <!-- 16. PRODUCT CONTOUR -->
+  <section class="slide" data-num="16">
     <div class="kicker rv">Система организации ИТ-команд</div>
     <h2 class="rv" style="--d:.06s">Что делать с существующими командами разработки</h2>
     <p class="lead rv" style="--d:.12s; margin-bottom:1.6rem">Существующие продуктовые команды организуем в формате <strong>«Продуктовый контур»</strong>: это постоянная группа разработчиков и специалистов вокруг системы или домена.</p>
@@ -722,8 +828,8 @@
     </div>
   </section>
 
-  <!-- 16. SHARED KANBAN -->
-  <section class="slide" data-num="16">
+  <!-- 17. SHARED KANBAN -->
+  <section class="slide" data-num="17">
     <div class="kicker rv">Продуктовый контур · организация работы</div>
     <h2 class="rv" style="--d:.06s">Канбан-доска продуктового контура</h2>
     <p class="lead rv" style="--d:.10s; margin-bottom:1.2rem">Доску ведут сами ИИ-инженеры. На одном экране видны проекты, задачи внутри них, владельцы и текущее состояние работы.</p>
@@ -750,8 +856,8 @@
     <div class="role-note rv" style="--d:.34s"><b>Карточки — часть документации:</b> по истории задач можно понять, что делали, зачем меняли решение и где искать связанные артефакты.</div>
   </section>
 
-  <!-- 17. DAILY -->
-  <section class="slide" data-num="17">
+  <!-- 18. DAILY -->
+  <section class="slide" data-num="18">
     <div class="kicker rv">Продуктовый контур · обязательная церемония</div>
     <h2 class="rv" style="--d:.06s">Дейлик продуктового контура</h2>
     <div class="role-cols">
@@ -786,8 +892,8 @@
     <div class="role-note rv" style="--d:.32s"><b>Предлагаемый регламент:</b> 15 минут каждый рабочий день. Подробные разборы продолжаются после дейлика только с теми, кто нужен для решения конкретного вопроса.</div>
   </section>
 
-  <!-- 18. RETROSPECTIVE REVIEW -->
-  <section class="slide" data-num="18">
+  <!-- 19. RETROSPECTIVE REVIEW -->
+  <section class="slide" data-num="19">
     <div class="kicker rv">Продуктовый контур · обязательная церемония</div>
     <h2 class="rv" style="--d:.06s">Ревью после релиза</h2>
     <p class="lead rv" style="--d:.10s; margin-bottom:1.5rem">Только ИИ-инженеры. Они разбирают уже собранные и выпущенные проекты друг друга, изучая репозиторий, код и принятые технические решения.</p>
@@ -814,8 +920,8 @@
     <div class="role-note rv" style="--d:.30s"><b>Это не выпускной контроль:</b> встреча не блокирует релиз. На ревью исходят из того, что проект уже работает, и превращают полученный опыт в улучшения и знания.</div>
   </section>
 
-  <!-- 19. PRINCIPLES -->
-  <section class="slide" data-num="19">
+  <!-- 20. PRINCIPLES -->
+  <section class="slide" data-num="20">
     <div class="kicker rv">Как мы работаем</div>
     <h2 class="rv" style="--d:.06s">Шесть принципов МПК</h2>
     <div class="grid g3 princ" style="max-width:66rem">
@@ -828,8 +934,8 @@
     </div>
   </section>
 
-  <!-- 20. EXPECTED EFFECT -->
-  <section class="slide" data-num="20">
+  <!-- 21. EXPECTED EFFECT -->
+  <section class="slide" data-num="21">
     <div class="kicker rv">Зачем это всё</div>
     <h2 class="rv" style="--d:.06s">Какой эффект получит компания</h2>
     <div class="grid g2 effect" style="max-width:62rem">
@@ -844,8 +950,8 @@
     </div>
   </section>
 
-  <!-- 21. FIRST MPK LAUNCH -->
-  <section class="slide" data-num="21">
+  <!-- 22. FIRST MPK LAUNCH -->
+  <section class="slide" data-num="22">
     <div class="kicker rv">Переход к практике · пилот</div>
     <h2 class="rv" style="--d:.06s">План запуска первой МПК</h2>
     <div class="next-steps">
@@ -858,8 +964,8 @@
     </div>
   </section>
 
-  <!-- 22. COMPANY-WIDE SCALE -->
-  <section class="slide" data-num="22">
+  <!-- 23. COMPANY-WIDE SCALE -->
+  <section class="slide" data-num="23">
     <div class="kicker rv">Следующий уровень · система</div>
     <h2 class="rv" style="--d:.06s">Как масштабировать подход на всю компанию</h2>
     <div class="next-steps">
@@ -872,8 +978,8 @@
     </div>
   </section>
 
-  <!-- 23. FINAL -->
-  <section class="slide s-final" data-num="23">
+  <!-- 24. FINAL -->
+  <section class="slide s-final" data-num="24">
     <div class="kicker rv">Итог</div>
     <h1 class="rv" style="--d:.08s">Меньше передач.<br><span class="accent">Больше результата.</span></h1>
     <p class="lead rv" style="--d:.18s">МПК быстро доводят инициативы до результата. Продуктовые контуры сохраняют общий контекст, взаимопомощь и прозрачность между проектами.</p>
@@ -885,7 +991,7 @@
 </div>
 
 <div class="navbar">
-  <div class="counter" id="counter"><b>01</b> / 23</div>
+  <div class="counter" id="counter"><b>01</b> / 24</div>
   <div class="navbtns">
     <button id="prev" aria-label="Назад">←</button>
     <button id="next" aria-label="Вперёд">→</button>
